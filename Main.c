@@ -83,14 +83,14 @@ int main(void) {
         if (white->line == table.size) {
             printf("The winner is WHITE!\n");
             SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,
-                                     "Game Over", "White wins!", g_win);
+                                     "Game Over", "White wins!", NULL);
             running = 0;
             break;
         }
         if (black->line == 1) {
             printf("The winner is BLACK!\n");
             SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,
-                                     "Game Over", "Black wins!", g_win);
+                                     "Game Over", "Black wins!", NULL);
             running = 0;
             break;
         }

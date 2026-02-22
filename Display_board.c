@@ -71,9 +71,8 @@ void sdl_init(int board_size) {
     g_win = SDL_CreateWindow("Quoridor",
                              SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                              win_w, win_h, 0);
-    g_ren = SDL_CreateRenderer(g_win, -1,
-                               SDL_RENDERER_ACCELERATED |
-                               SDL_RENDERER_PRESENTVSYNC);
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "software");
+    g_ren = SDL_CreateRenderer(g_win, -1, SDL_RENDERER_SOFTWARE);
     SDL_SetRenderDrawBlendMode(g_ren, SDL_BLENDMODE_BLEND);
 
     /* Try common font paths — adjust if not found on your system */
