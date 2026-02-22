@@ -8,7 +8,7 @@ void ai_generate(int *row,int *line,int *op_row,int *op_line,listnode alist,int 
     if(turns%2==1){ //when turn is odd blacks' player
         
     for(i=0; i<count_walls; i++){ //condition for ai to recognize if there are walls in front of it
-        if(hor[i][1]-*line==1 || hor[i][0]-*line==0 &&(hor[i][0]==*row)){
+        if((hor[i][1] == *line || hor[i][1] == *line - 1) && (hor[i][0] == *row || hor[i][0] == *row - 1)){
             flag=0;
         }
     }
@@ -130,7 +130,7 @@ void ai_generate(int *row,int *line,int *op_row,int *op_line,listnode alist,int 
 
     else{ //its white's player turn
     for(i=0; i<count_walls; i++){ //condition for ai to recognize if there are walls in front of it
-        if(hor[i][1]-*line==1 || hor[i][0]-*line==0 &&(hor[i][0]==*row)){
+        if((hor[i][1] == *line || hor[i][1] == *line + 1) && (hor[i][0] == *row || hor[i][0] == *row - 1)){
             flag=0;
         }
     } 
@@ -247,8 +247,4 @@ void ai_generate(int *row,int *line,int *op_row,int *op_line,listnode alist,int 
                 ++(*line);
         }
         }
-        while (alist != NULL) {
-            if((alist)->next==NULL) break;
-        alist = ((alist)->next);    
-    } 
 } 

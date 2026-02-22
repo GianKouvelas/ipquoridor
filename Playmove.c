@@ -59,10 +59,11 @@ int playmove(char array[],int *row,int *line,listnode alist,int hor[][2],int ver
     way2=array[1]-*line-48;
     *line=array[1]-48; //we subtract 48 because the character has a value of =<49 from ascii
     while (alist != NULL) {
-        if((alist)->next==NULL) break;
+        if((alist)->next==NULL || (alist)->next->next==NULL) break;
         alist = ((alist)->next);
     } 
-    if (alist->cord1==*row && alist->cord2==*line) { //it jumps over the other player
+    /* alist now points to the second-to-last node, which is the opponent's last position */
+    if (alist != NULL && alist->cord1==*row && alist->cord2==*line) { //it jumps over the other player
         if (way1==1)
             (*row)++;
         else if (way2==1)

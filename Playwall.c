@@ -9,13 +9,11 @@ int playwall(char array[],int walls[][2],int *count_walls,int dimen) {
     temp2=array[1]-48;
     if(dimen==1) {
         for(int i=0;i<(*count_walls);i++) {
-            if(walls[i][1]==temp2) {
-                count++;
-                if(count==2) 
-                    return 1;
+            /* A horizontal wall occupies columns temp1 and temp1+1 at line temp2.
+               Overlap if any existing wall shares the same line and an adjacent/same column. */
+            if(walls[i][1]==temp2 && (walls[i][0]==temp1 || walls[i][0]==temp1-1 || walls[i][0]==temp1+1)) {
+                return 1;
             }
-            else 
-                count=0;
         }     
         walls[*count_walls][0]=temp1;
         walls[*count_walls][1]=temp2;
