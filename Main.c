@@ -10,6 +10,7 @@ void sdl_quit(void);
 int  px_to_col(int px);
 int  py_to_line(int py);
 int  px_to_wall_gap(int px, int py, int *col, int *line);
+void draw_preview(int hover_type, int col, int line, int size, int is_black);
 
 int turn = 0;
 
@@ -68,10 +69,16 @@ int main(void) {
     /* wall_mode: 0 = move mode, 1 = place horizontal, 2 = place vertical   */
     int wall_mode = 0;
 
+    /* hover state — updated on every mouse motion */
+    int hover_type = -1;  /* -1=nothing, 0=pawn, 1=horiz wall, 2=vert wall */
+    int hover_col  = 0;
+    int hover_line = 0;
+
     /* Draw the initial board */
     display_board(table.size, table.walls_w, table.walls_b,
                   white->line, white->row, black->line, black->row,
                   walls, wall_ho, wall_ve);
+    draw_preview(-1, 0, 0, table.size, 0);
 
     /* ── main SDL event loop ─────────────────────────────────────────────── */
     SDL_Event ev;
@@ -97,6 +104,66 @@ int main(void) {
 
         /* wait for the next event */
         if (SDL_WaitEvent(&ev) == 0) continue;
+
+        /* ── mouse motion → update hover preview ────────────────────────── */
+        if (ev.type == SDL_MOUSEMOTION) {
+            /* Drain all queued motion events and keep only the last one.
+               This prevents the preview from lagging behind the mouse when
+               many motion events pile up faster than we can draw.           */
+            SDL_Event next;
+            while (SDL_PeepEvents(&next, 1, SDL_GETEVENT,
+                                  SDL_MOUSEMOTION, SDL_MOUSEMOTION) > 0)
+                ev = next;
+
+            int mx = ev.motion.x;
+            int my = ev.motion.y;
+            int wcol, wline;
+            int gap = px_to_wall_gap(mx, my, &wcol, &wline);
+            int is_black = (turn % 2 == 1);
+
+            if (wall_mode == 1) {
+                /* forced horizontal wall mode */
+                if (gap == 1) { hover_type = 1; hover_col = wcol; hover_line = wline; }
+                else          { hover_type = -1; }
+            } else if (wall_mode == 2) {
+                /* forced vertical wall mode */
+                if (gap == 2) { hover_type = 2; hover_col = wcol; hover_line = wline; }
+                else          { hover_type = -1; }
+            } else {
+                /* auto mode — show wall preview near gaps, pawn near cells */
+                if (gap == 1)      { hover_type = 1; hover_col = wcol; hover_line = wline; }
+                else if (gap == 2) { hover_type = 2; hover_col = wcol; hover_line = wline; }
+                else {
+                    int c = px_to_col(mx);
+                    int l = py_to_line(my);
+                    if (c != 0 && l != 0) {
+                        /* if hovering the opponent's square, show jump destination */
+                        int op_row  = (turn % 2 == 1) ? white->row  : black->row;
+                        int op_line = (turn % 2 == 1) ? white->line : black->line;
+                        int cur_row  = (turn % 2 == 1) ? black->row  : white->row;
+                        int cur_line = (turn % 2 == 1) ? black->line : white->line;
+                        if (c == op_row && l == op_line) {
+                            /* show where the jump would land instead */
+                            hover_col  = cur_row  + (op_row  - cur_row)  * 2;
+                            hover_line = cur_line + (op_line - cur_line) * 2;
+                        } else {
+                            hover_col  = c;
+                            hover_line = l;
+                        }
+                        hover_type = 0;
+                    }
+                    else { hover_type = -1; }
+                }
+            }
+
+            /* redraw board + preview every motion event */
+            display_board(table.size, table.walls_w, table.walls_b,
+                          white->line, white->row,
+                          black->line, black->row,
+                          walls, wall_ho, wall_ve);
+            draw_preview(hover_type, hover_col, hover_line, table.size, is_black);
+            continue;
+        }
 
         /* ── keyboard ────────────────────────────────────────────────────── */
         if (ev.type == SDL_QUIT) {
@@ -144,6 +211,7 @@ int main(void) {
                                   white->line, white->row,
                                   black->line, black->row,
                                   walls, wall_ho, wall_ve);
+                    draw_preview(-1, 0, 0, table.size, 0);
                     break;
                 }
 
@@ -219,7 +287,8 @@ int main(void) {
                 if (turn % 2 == 1) { /* black's turn */
                     tr = playmove(move_str,
                                   &(black->row), &(black->line),
-                                  list_mem, wall_ho, wall_ve,
+                                  white->row, white->line,
+                                  wall_ho, wall_ve,
                                   2 * walls - table.walls_b - table.walls_w);
                     if (tr == 0) {
                         insert_at_end(&list_mem, black->row, black->line);
@@ -228,7 +297,8 @@ int main(void) {
                 } else {             /* white's turn */
                     tr = playmove(move_str,
                                   &(white->row), &(white->line),
-                                  list_mem, wall_ho, wall_ve,
+                                  black->row, black->line,
+                                  wall_ho, wall_ve,
                                   2 * walls - table.walls_b - table.walls_w);
                     if (tr == 0) {
                         insert_at_end(&list_mem, white->row, white->line);
@@ -242,6 +312,7 @@ int main(void) {
                           white->line, white->row,
                           black->line, black->row,
                           walls, wall_ho, wall_ve);
+            draw_preview(-1, 0, 0, table.size, 0);
         }
     }
 

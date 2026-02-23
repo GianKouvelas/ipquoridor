@@ -24,7 +24,7 @@ void display_board(int size, int walls_w, int walls_b,
                    int linew, int roww, int lineb, int rowb,
                    int walls, int wall_ho[][2], int wall_ve[][2]);
 
-int playmove(char array[], int *row, int *line, listnode alist,
+int playmove(char array[], int *row, int *line, int op_row, int op_line,
              int hor[][2], int ver[][2], int count_walls);
 
 int playwall(char array[], int walls[][2], int *count_wall, int dimen);
@@ -41,3 +41,4 @@ void sdl_quit(void);
 int  px_to_col(int px);
 int  py_to_line(int py);
 int  px_to_wall_gap(int px, int py, int *col, int *line);
+void draw_preview(int hover_type, int col, int line, int size, int is_black);

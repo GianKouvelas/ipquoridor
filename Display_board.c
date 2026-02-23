@@ -147,15 +147,15 @@ void display_board(int size, int walls_w, int walls_b,
     }
 
     /* ── vertical walls (blue bars) ─────────────────────────────────────── */
-    /* wall_ve[i] = {col, line}: bar sits between col and col+1,
-       spanning rows line and line+1.                                        */
+    /* wall_ve stores TWO entries per wall (line and line-1), so we draw
+       each entry as one cell tall — together they cover exactly 2 cells.   */
     for (int i = 0; i < walls * 4; i++) {
         if (wall_ve[i][0] == 0 && wall_ve[i][1] == 0) continue;
         int col  = wall_ve[i][0];
         int line = wall_ve[i][1];
         int px = MARGIN + col * CELL - WALL_THICK / 2;
-        int py = MARGIN + (size - line - 1) * CELL;
-        SDL_Rect wall = {px, py, WALL_THICK, CELL * 2};
+        int py = MARGIN + (size - line) * CELL;
+        SDL_Rect wall = {px, py, WALL_THICK, CELL};
         SDL_SetRenderDrawColor(g_ren, 0x34, 0x98, 0xdb, 255);
         SDL_RenderFillRect(g_ren, &wall);
     }
@@ -202,6 +202,49 @@ void display_board(int size, int walls_w, int walls_b,
     draw_text("[H] toggle H / V wall", tx, 245, 200, 200, 200);
     draw_text("[G] AI move",           tx, 265, 200, 200, 200);
     draw_text("[Q] quit",              tx, 285, 200, 200, 200);
+
+    /* NOTE: SDL_RenderPresent is NOT called here — caller draws the hover
+       preview on top first, then calls draw_preview() which presents.      */
+}
+
+/* ── public: draw hover preview on top of board, then present the frame ─── */
+/* hover_type: 0=pawn, 1=horizontal wall, 2=vertical wall, -1=nothing        */
+void draw_preview(int hover_type, int col, int line, int size, int is_black) {
+    if (hover_type == -1 || col == 0 || line == 0) {
+        SDL_RenderPresent(g_ren);
+        return;
+    }
+
+    if (hover_type == 0) {
+        /* ghost pawn — semi-transparent at the target cell */
+        int cx = col_to_px(col);
+        int cy = line_to_py(line, size);
+        int radius = CELL / 2 - 8;
+        SDL_SetRenderDrawColor(g_ren, 0xff, 0xaa, 0x00, 100);
+        draw_filled_circle(cx, cy, radius + 5);
+        if (is_black)
+            SDL_SetRenderDrawColor(g_ren, 0x22, 0x22, 0x22, 160);
+        else
+            SDL_SetRenderDrawColor(g_ren, 0xee, 0xee, 0xee, 160);
+        draw_filled_circle(cx, cy, radius);
+    }
+    else if (hover_type == 1) {
+        /* ghost horizontal wall — red transparent bar */
+        int px = MARGIN + (col - 1) * CELL;
+        int py = MARGIN + (size - line) * CELL + CELL - WALL_THICK / 2;
+        SDL_Rect wall = {px, py, CELL * 2, WALL_THICK};
+        SDL_SetRenderDrawColor(g_ren, 0xe7, 0x4c, 0x3c, 140);
+        SDL_RenderFillRect(g_ren, &wall);
+    }
+    else if (hover_type == 2) {
+        /* ghost vertical wall — blue transparent bars (two cell segments) */
+        int px = MARGIN + col * CELL - WALL_THICK / 2;
+        SDL_Rect wall1 = {px, MARGIN + (size - line) * CELL,     WALL_THICK, CELL};
+        SDL_Rect wall2 = {px, MARGIN + (size - line + 1) * CELL, WALL_THICK, CELL};
+        SDL_SetRenderDrawColor(g_ren, 0x34, 0x98, 0xdb, 140);
+        SDL_RenderFillRect(g_ren, &wall1);
+        SDL_RenderFillRect(g_ren, &wall2);
+    }
 
     SDL_RenderPresent(g_ren);
 }
