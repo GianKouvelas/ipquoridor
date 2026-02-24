@@ -420,7 +420,13 @@ int px_to_wall_gap(int px, int py, int *col, int *line) {
     int c     = (px - MARGIN) / CELL + 1;
     int l     = g_size - (py - MARGIN) / CELL;
     if (c < 1 || c > g_size || l < 1 || l > g_size) return 0;
-    if (rel_y > CELL - gap && l > 1)    { *col = c; *line = l; return 1; }
-    if (rel_x > CELL - gap && c < g_size) { *col = c; *line = l; return 2; }
+    /* horizontal wall: spans cols c and c+1, so c must be < g_size
+       sits between lines l-1 and l, so l must be > 1               */
+    if (rel_y > CELL - gap && l > 1 && c < g_size)
+        { *col = c; *line = l; return 1; }
+    /* vertical wall: spans lines l and l-1, so l must be > 1
+       sits between cols c and c+1, so c must be < g_size           */
+    if (rel_x > CELL - gap && c < g_size && l > 1)
+        { *col = c; *line = l; return 2; }
     return 0;
 }

@@ -10,7 +10,7 @@ static int can_reach(int start_col, int start_line, int goal_line,
                      int ver[][2], int v_count) {
 
     // printf("  BFS: from col=%d line=%d -> goal_line=%d, hc=%d vc=%d\n",
-    //       start_col, start_line, goal_line, h_count, v_count);
+    //        start_col, start_line, goal_line, h_count, v_count);
 
     /* visited[col-1][line-1] */
     char visited[size][size];
@@ -95,6 +95,10 @@ int playwall(char array[], int wall_ho[][2], int *h_count,
 
     if (dimen == 1) {
         /* ── horizontal wall ── */
+        /* must fit within board: spans cols temp1 and temp1+1, sits between lines */
+        if (temp1 < 1 || temp1 + 1 > size) return 1;
+        if (temp2 < 2 || temp2 > size)     return 1;
+
         for (int i = 0; i < *h_count; i++) {
             if (wall_ho[i][1] == temp2 &&
                 (wall_ho[i][0] == temp1 ||
@@ -120,6 +124,10 @@ int playwall(char array[], int wall_ho[][2], int *h_count,
 
     } else {
         /* ── vertical wall ── */
+        /* must fit within board: sits between cols temp1 and temp1+1, spans lines temp2 and temp2-1 */
+        if (temp1 < 1 || temp1 + 1 > size) return 1;
+        if (temp2 < 2 || temp2 > size)     return 1;
+
         for (int i = 0; i < (*v_count) * 2; i++) {
             if (wall_ve[i][0] == temp1) {
                 count++;
