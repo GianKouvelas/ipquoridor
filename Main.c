@@ -45,6 +45,7 @@ int main(void) {
     table.walls_b = walls;
     table.walls_w = walls;
 
+
     white = malloc(sizeof *white);
     black = malloc(sizeof *black);
 
@@ -66,8 +67,7 @@ int main(void) {
     insert_at_end(&list_mem, white->row, white->line);
     turn = 1; /* skip turn-0 init block — already done above */
 
-    /* wall_mode: 0 = move mode, 1 = place horizontal, 2 = place vertical   */
-    int wall_mode = 0;
+    /* wall_mode removed — wall type is always auto-detected from click position */
 
     /* hover state — updated on every mouse motion */
     int hover_type = -1;  /* -1=nothing, 0=pawn, 1=horiz wall, 2=vert wall */
@@ -121,39 +121,27 @@ int main(void) {
             int gap = px_to_wall_gap(mx, my, &wcol, &wline);
             int is_black = (turn % 2 == 1);
 
-            if (wall_mode == 1) {
-                /* forced horizontal wall mode */
-                if (gap == 1) { hover_type = 1; hover_col = wcol; hover_line = wline; }
-                else          { hover_type = -1; }
-            } else if (wall_mode == 2) {
-                /* forced vertical wall mode */
-                if (gap == 2) { hover_type = 2; hover_col = wcol; hover_line = wline; }
-                else          { hover_type = -1; }
-            } else {
-                /* auto mode — show wall preview near gaps, pawn near cells */
-                if (gap == 1)      { hover_type = 1; hover_col = wcol; hover_line = wline; }
-                else if (gap == 2) { hover_type = 2; hover_col = wcol; hover_line = wline; }
-                else {
-                    int c = px_to_col(mx);
-                    int l = py_to_line(my);
-                    if (c != 0 && l != 0) {
-                        /* if hovering the opponent's square, show jump destination */
-                        int op_row  = (turn % 2 == 1) ? white->row  : black->row;
-                        int op_line = (turn % 2 == 1) ? white->line : black->line;
-                        int cur_row  = (turn % 2 == 1) ? black->row  : white->row;
-                        int cur_line = (turn % 2 == 1) ? black->line : white->line;
-                        if (c == op_row && l == op_line) {
-                            /* show where the jump would land instead */
-                            hover_col  = cur_row  + (op_row  - cur_row)  * 2;
-                            hover_line = cur_line + (op_line - cur_line) * 2;
-                        } else {
-                            hover_col  = c;
-                            hover_line = l;
-                        }
-                        hover_type = 0;
+            /* auto-detect: gap → wall preview, cell → pawn preview */
+            if (gap == 1)      { hover_type = 1; hover_col = wcol; hover_line = wline; }
+            else if (gap == 2) { hover_type = 2; hover_col = wcol; hover_line = wline; }
+            else {
+                int c = px_to_col(mx);
+                int l = py_to_line(my);
+                if (c != 0 && l != 0) {
+                    int op_row  = (turn % 2 == 1) ? white->row  : black->row;
+                    int op_line = (turn % 2 == 1) ? white->line : black->line;
+                    int cur_row  = (turn % 2 == 1) ? black->row  : white->row;
+                    int cur_line = (turn % 2 == 1) ? black->line : white->line;
+                    if (c == op_row && l == op_line) {
+                        hover_col  = cur_row  + (op_row  - cur_row)  * 2;
+                        hover_line = cur_line + (op_line - cur_line) * 2;
+                    } else {
+                        hover_col  = c;
+                        hover_line = l;
                     }
-                    else { hover_type = -1; }
+                    hover_type = 0;
                 }
+                else { hover_type = -1; }
             }
 
             /* redraw board + preview every motion event */
@@ -178,27 +166,15 @@ int main(void) {
                     running = 0;
                     break;
 
-                /* [H] — switch to / toggle horizontal wall mode */
-                case SDLK_h:
-                    wall_mode = (wall_mode == 1) ? 0 : 1;
-                    printf("Mode: %s\n", wall_mode == 1 ? "HORIZONTAL WALL" : "MOVE");
-                    break;
-
-                /* [V] — switch to / toggle vertical wall mode */
-                case SDLK_v:
-                    wall_mode = (wall_mode == 2) ? 0 : 2;
-                    printf("Mode: %s\n", wall_mode == 2 ? "VERTICAL WALL" : "MOVE");
-                    break;
-
                 /* [G] — let AI play the current turn */
                 case SDLK_g: {
-                    if (turn % 2 == 1) { /* black's turn */
+                    if (turn % 2 == 1) {
                         ai_generate(&(black->row), &(black->line),
                                     &(white->row), &(white->line),
                                     list_mem, wall_ho,
                                     2 * walls - table.walls_b, turn, table.size);
                         insert_at_end(&list_mem, black->row, black->line);
-                    } else {             /* white's turn */
+                    } else {
                         ai_generate(&(white->row), &(white->line),
                                     &(black->row), &(black->line),
                                     list_mem, wall_ho,
@@ -206,7 +182,6 @@ int main(void) {
                         insert_at_end(&list_mem, white->row, white->line);
                     }
                     turn++;
-                    wall_mode = 0;
                     display_board(table.size, table.walls_w, table.walls_b,
                                   white->line, white->row,
                                   black->line, black->row,
@@ -228,32 +203,18 @@ int main(void) {
             int wcol, wline;
             int gap_type = px_to_wall_gap(mx, my, &wcol, &wline);
 
-            /* --- wall placement via clicking a gap ----------------------- */
-            if (gap_type != 0 && wall_mode == 0) {
-                /* auto-detect from gap location when not in explicit mode  */
-                wall_mode = gap_type;
-            }
-
-            if (wall_mode == 1 || wall_mode == 2) {
-                /* need a valid gap click */
-                if (gap_type == 0) {
-                    /* clicked inside a cell while in wall mode — cancel    */
-                    wall_mode = 0;
-                    printf("Wall mode cancelled.\n");
-                    continue;
-                }
-                char wall_str[5];
-                char type = (wall_mode == 1) ? 'h' : 'v';
-                make_wall_str(wall_str, wcol, wline, type);
-
+            if (gap_type != 0) {
+                /* ── wall placement — type comes directly from click position */
                 int *walls_left = (turn % 2 == 1) ? &table.walls_b : &table.walls_w;
                 if (*walls_left == 0) {
                     printf("No walls left for this player.\n");
-                    wall_mode = 0;
                     continue;
                 }
+                char wall_str[5];
+                char type = (gap_type == 1) ? 'h' : 'v';
+                make_wall_str(wall_str, wcol, wline, type);
 
-                if (wall_mode == 1) {
+                if (gap_type == 1) {
                     tr = playwall(wall_str, wall_ho, &h, 1);
                     if (tr == 0) {
                         (*walls_left)--;
@@ -266,44 +227,32 @@ int main(void) {
                         sorting(wall_ve, v);
                     }
                 }
-
-                if (tr != 0) {
-                    printf("Invalid wall placement, try again.\n");
-                    continue;
-                }
-
-                wall_mode = 0;
+                if (tr != 0) { printf("Invalid wall placement.\n"); continue; }
                 turn++;
 
             } else {
-                /* --- pawn move via clicking a cell ----------------------- */
+                /* ── pawn move — clicked inside a cell */
                 int col  = px_to_col(mx);
                 int line = py_to_line(my);
-                if (col == 0 || line == 0) continue; /* outside board       */
+                if (col == 0 || line == 0) continue;
 
                 char move_str[4];
                 make_move_str(move_str, col, line);
 
-                if (turn % 2 == 1) { /* black's turn */
+                if (turn % 2 == 1) {
                     tr = playmove(move_str,
                                   &(black->row), &(black->line),
                                   white->row, white->line,
                                   wall_ho, wall_ve,
                                   2 * walls - table.walls_b - table.walls_w);
-                    if (tr == 0) {
-                        insert_at_end(&list_mem, black->row, black->line);
-                        turn++;
-                    }
-                } else {             /* white's turn */
+                    if (tr == 0) { insert_at_end(&list_mem, black->row, black->line); turn++; }
+                } else {
                     tr = playmove(move_str,
                                   &(white->row), &(white->line),
                                   black->row, black->line,
                                   wall_ho, wall_ve,
                                   2 * walls - table.walls_b - table.walls_w);
-                    if (tr == 0) {
-                        insert_at_end(&list_mem, white->row, white->line);
-                        turn++;
-                    }
+                    if (tr == 0) { insert_at_end(&list_mem, white->row, white->line); turn++; }
                 }
             }
 
