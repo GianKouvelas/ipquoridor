@@ -37,14 +37,11 @@ int main(void) {
     struct list   *list_mem = NULL;
     int  walls, h = 0, v = 0, tr;
 
-    /* ── setup (still read size and walls from terminal once) ───────────── */
-    printf("boardsize : ");
-    scanf("%d", &table.size);
-    printf("walls     : ");
-    scanf("%d", &walls);
-    table.walls_b = walls;
-    table.walls_w = walls;
-
+    /* ── setup ───────────────────────────────────────────────────────────── */
+    table.size    = 10;
+    table.walls_b = 5;
+    table.walls_w = 5;
+    walls = 5;
 
     white = malloc(sizeof *white);
     black = malloc(sizeof *black);
@@ -215,13 +212,19 @@ int main(void) {
                 make_wall_str(wall_str, wcol, wline, type);
 
                 if (gap_type == 1) {
-                    tr = playwall(wall_str, wall_ho, &h, 1);
+                    tr = playwall(wall_str, wall_ho, &h, wall_ve, &v, 1,
+                                  table.size,
+                                  black->row, black->line,
+                                  white->row, white->line);
                     if (tr == 0) {
                         (*walls_left)--;
                         sorting(wall_ho, h);
                     }
                 } else {
-                    tr = playwall(wall_str, wall_ve, &v, 0);
+                    tr = playwall(wall_str, wall_ho, &h, wall_ve, &v, 0,
+                                  table.size,
+                                  black->row, black->line,
+                                  white->row, white->line);
                     if (tr == 0) {
                         (*walls_left)--;
                         sorting(wall_ve, v);

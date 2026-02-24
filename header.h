@@ -27,7 +27,7 @@ void display_board(int size, int walls_w, int walls_b,
 int playmove(char array[], int *row, int *line, int op_row, int op_line,
              int hor[][2], int ver[][2], int count_walls);
 
-int playwall(char array[], int walls[][2], int *count_wall, int dimen);
+int playwall(char array[], int wall_ho[][2], int *h_count,int wall_ve[][2], int *v_count, int dimen,int size,int b_col, int b_line, int w_col, int w_line);
 
 void sorting(int array[][2], int walls);
 
