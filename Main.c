@@ -55,6 +55,22 @@ int main(void) {
     /* ── open the SDL window ─────────────────────────────────────────────── */
     sdl_init(table.size);
 
+    /* ── ask: play vs AI? ───────────────────────────────────────────────── */
+    const SDL_MessageBoxButtonData btns[] = {
+        { SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Yes — vs AI" },
+        { SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "No — 2 players" },
+    };
+    const SDL_MessageBoxData mbd = {
+        SDL_MESSAGEBOX_INFORMATION, NULL,
+        "Quoridor", "Play against the AI?",
+        2, btns, NULL
+    };
+    int btn_id = 0;
+    SDL_ShowMessageBox(&mbd, &btn_id);
+    /* btn_id == 1 → vs AI (AI plays white, turn%2==0)
+       btn_id == 0 → two human players                  */
+    int ai_plays = btn_id;   /* 1 = AI controls white (even turns) */
+
     /* ── initial pawn positions ──────────────────────────────────────────── */
     white->line = 1;
     white->row  = table.size / 2 + 1;
@@ -62,7 +78,7 @@ int main(void) {
     black->row  = table.size / 2 + 1;
     insert_at_end(&list_mem, black->row, black->line);
     insert_at_end(&list_mem, white->row, white->line);
-    turn = 1; /* skip turn-0 init block — already done above */
+    turn = 1; /* black goes first (odd turns) */
 
     /* wall_mode removed — wall type is always auto-detected from click position */
 
@@ -76,6 +92,35 @@ int main(void) {
                   white->line, white->row, black->line, black->row,
                   walls, wall_ho, wall_ve);
     draw_preview(-1, 0, 0, table.size, 0);
+
+    /* ── AI move helper — runs one AI turn and redraws ──────────────────── */
+#define DO_AI_MOVE() do {                                                   \
+    int _prev_h = h, _prev_v = v;                                          \
+    if (turn % 2 == 1) {                                                    \
+        ai_generate(&(black->row), &(black->line),                          \
+                    white->row, white->line,                                \
+                    wall_ho, h, wall_ve, v,                                 \
+                    1, table.size,                                          \
+                    table.walls_b, table.walls_w,                           \
+                    wall_ho, &h, wall_ve, &v);                              \
+        if (h > _prev_h || v > _prev_v) { table.walls_b--; sorting(wall_ho, h); } \
+        else insert_at_end(&list_mem, black->row, black->line);             \
+    } else {                                                                \
+        ai_generate(&(white->row), &(white->line),                          \
+                    black->row, black->line,                                \
+                    wall_ho, h, wall_ve, v,                                 \
+                    table.size, table.size,                                 \
+                    table.walls_w, table.walls_b,                           \
+                    wall_ho, &h, wall_ve, &v);                              \
+        if (h > _prev_h || v > _prev_v) { table.walls_w--; sorting(wall_ho, h); } \
+        else insert_at_end(&list_mem, white->row, white->line);             \
+    }                                                                       \
+    turn++;                                                                 \
+    display_board(table.size, table.walls_w, table.walls_b,                \
+                  white->line, white->row, black->line, black->row,         \
+                  walls, wall_ho, wall_ve);                                 \
+    draw_preview(-1, 0, 0, table.size, 0);                                 \
+} while(0)
 
     /* ── main SDL event loop ─────────────────────────────────────────────── */
     SDL_Event ev;
@@ -97,6 +142,12 @@ int main(void) {
                                      "Game Over", "Black wins!", NULL);
             running = 0;
             break;
+        }
+
+        /* if it's the AI's turn, move immediately without waiting for input */
+        if (ai_plays && turn % 2 == 0) {
+            DO_AI_MOVE();
+            continue;
         }
 
         /* wait for the next event */
@@ -162,30 +213,6 @@ int main(void) {
                 case SDLK_q:
                     running = 0;
                     break;
-
-                /* [G] — let AI play the current turn */
-                case SDLK_g: {
-                    if (turn % 2 == 1) {
-                        ai_generate(&(black->row), &(black->line),
-                                    &(white->row), &(white->line),
-                                    list_mem, wall_ho,
-                                    2 * walls - table.walls_b, turn, table.size);
-                        insert_at_end(&list_mem, black->row, black->line);
-                    } else {
-                        ai_generate(&(white->row), &(white->line),
-                                    &(black->row), &(black->line),
-                                    list_mem, wall_ho,
-                                    2 * walls - table.walls_w, turn, table.size);
-                        insert_at_end(&list_mem, white->row, white->line);
-                    }
-                    turn++;
-                    display_board(table.size, table.walls_w, table.walls_b,
-                                  white->line, white->row,
-                                  black->line, black->row,
-                                  walls, wall_ho, wall_ve);
-                    draw_preview(-1, 0, 0, table.size, 0);
-                    break;
-                }
 
                 default: break;
             }

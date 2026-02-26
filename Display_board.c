@@ -349,7 +349,6 @@ void display_board(int size, int walls_w, int walls_b,
 
     draw_text_sm("click cell   move pawn",  tx, 208, 0x55, 0x5a, 0x72);
     draw_text_sm("click gap    place wall", tx, 224, 0x55, 0x5a, 0x72);
-    draw_text_sm("[G]  AI move",            tx, 240, 0x55, 0x5a, 0x72);
     draw_text_sm("[Q]  quit",               tx, 256, 0x55, 0x5a, 0x72);
 
     /* NOTE: SDL_RenderPresent not called here — draw_preview() does it */

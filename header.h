@@ -27,13 +27,21 @@ void display_board(int size, int walls_w, int walls_b,
 int playmove(char array[], int *row, int *line, int op_row, int op_line,
              int hor[][2], int ver[][2], int count_walls);
 
-int playwall(char array[], int wall_ho[][2], int *h_count,int wall_ve[][2], int *v_count, int dimen,int size,int b_col, int b_line, int w_col, int w_line);
+int playwall(char array[], int wall_ho[][2], int *h_count,
+             int wall_ve[][2], int *v_count, int dimen,
+             int size,
+             int b_col, int b_line, int w_col, int w_line);
 
 void sorting(int array[][2], int walls);
 
-void ai_generate(int *row, int *line, int *op_row, int *op_line,
-                 listnode alist, int hor[][2], int count_walls,
-                 int turns, int size);
+void ai_generate(int *row, int *line,
+                 int op_row, int op_line,
+                 int hor[][2], int hc,
+                 int ver[][2], int vc,
+                 int goal_line, int size,
+                 int ai_walls_left, int op_walls_left,
+                 int hor_out[][2], int *hc_out,
+                 int ver_out[][2], int *vc_out);
 
 /* ── SDL display helpers (defined in Display_board.c) ───────────────────── */
 void sdl_init(int board_size);
