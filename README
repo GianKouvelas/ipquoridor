@@ -1,0 +1,7 @@
+How to play:
+
+It's the basic quoridor game with rules being:
+1. Move one step up,dowr,right or left.
+2. Place walls horizontally or vertically, which the payer can't pass.
+3. If you are face to face with the other player, if you move to his cell you jump over him, moving 2 steps.
+4. The player wins when he/she reaches the other side from where he started.
